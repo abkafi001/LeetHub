@@ -565,7 +565,7 @@ function parseStats() {
   }
   // For new UI
   else {
-    
+
     const stats = document.getElementsByClassName('text-label-1 dark:text-dark-label-1 ml-2 font-medium');
     const percentile = document.getElementsByClassName('text-white dark:text-dark-white ml-2 rounded-xl px-1.5 font-medium')
     if (!checkElem(stats) && !checkElem(percentile)) {
@@ -582,12 +582,77 @@ function parseStats() {
 }
 
 document.addEventListener('click', (event) => {
+
   const element = event.target;
   const oldPath = window.location.pathname;
 
+  /*
+  ** In the new UI, question element gets removed from the document 
+  ** once submit button is hit and a verdict is given. So, in this
+  ** scinerio the approach followed is temporarily storing the question
+  ** element in the local storage as soon as submit button is clicked.
+  */
+
+  // If submit button is clicked, then store the markdown containing
+  // the question title and element in the local storage
+
+  // Checks if the clicked element is the `Submit` button of the new UI
+  if(element === [...document.getElementsByTagName('button')].filter((element) => element.innerText === 'Submit')[0]) {
+
+    let questionUrl = window.location.href;
+    if (questionUrl.endsWith('/submissions/')) {
+      questionUrl = questionUrl.substring(
+        0,
+        questionUrl.lastIndexOf('/submissions/') + 1,
+      );
+    }
+
+    const questionElem = document.getElementsByClassName('_1l1MA');
+
+    if (checkElem(questionElem)) {
+
+      const qbody = questionElem[0].innerHTML;
+      // Problem title.
+      let qtitle = document.getElementsByClassName('mr-2 text-lg font-medium text-label-1 dark:text-dark-label-1');
+  
+      if (checkElem(qtitle)) {
+        qtitle = qtitle[0].innerHTML;
+      } else {
+        qtitle = 'unknown-problem';
+      }
+  
+      // Problem difficulty, each problem difficulty has its own class.
+      // Get the classname correctly.
+      // I checked the uniqueness of all three combinations of classnames.
+      const isHard = document.getElementsByClassName('bg-pink dark:bg-dark-pink text-pink dark:text-dark-pink inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
+      const isMedium = document.getElementsByClassName('bg-yellow dark:bg-dark-yellow text-yellow dark:text-dark-yellow inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
+      const isEasy = document.getElementsByClassName('bg-olive dark:bg-dark-olive text-olive dark:text-dark-olive inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
+  
+      if (checkElem(isEasy)) {
+        difficulty = 'Easy';
+      } else if (checkElem(isMedium)) {
+        difficulty = 'Medium';
+      } else if (checkElem(isHard)) {
+        difficulty = 'Hard';
+      }
+
+      // Final formatting of the contents of the README for each problem
+      const markdown = `<h2><a href="${questionUrl}">${qtitle}</a></h2><h3>${difficulty}</h3><hr>${qbody}`;
+      console.log("🚀 ~ file: leetcode.js ~ line 662 ~ document.addEventListener ~ qtitle", qtitle)
+      // Save the problem title slug to localStorage
+      chrome.storage.local.set({"title-slug": addLeadingZeros(convertToSlug(qtitle))}, function() {
+        console.log(`Successfully stored the title-slug: ${addLeadingZeros(convertToSlug(qtitle))} in local storage`);
+      });
+      
+      // Save the markdown to localStorage
+      chrome.storage.local.set({"question-markdown": markdown}, function(){
+        console.log("Successfully stored the README in local storage");
+      });
+    }
+  }
   /* Act on Post button click */
   /* Complex since "New" button shares many of the same properties as "Post button */
-  if (
+  else if (
     element.classList.contains('icon__3Su4') ||
     element.parentElement.classList.contains('icon__3Su4') ||
     element.parentElement.classList.contains(
