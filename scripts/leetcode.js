@@ -1,3 +1,6 @@
+// UI mode (old vs new) tracker (defaulted to `false`).
+let OLD_UI = false;
+
 /* Enum for languages supported by LeetCode. */
 const languages = {
   Python: '.py',
@@ -38,20 +41,34 @@ let uploadState = { uploading: false };
 
 /* Get file extension for submission */
 function findLanguage() {
-  const tag = [
-    ...document.getElementsByClassName(
-      'ant-select-selection-selected-value',
-    ),
+
+  if(OLD_UI) {
+    const tag = [
+      ...document.getElementsByClassName(
+        'ant-select-selection-selected-value',
+        ),
     ...document.getElementsByClassName('Select-value-label'),
-  ];
-  if (tag && tag.length > 0) {
-    for (let i = 0; i < tag.length; i += 1) {
-      const elem = tag[i].textContent;
-      if (elem !== undefined && languages[elem] !== undefined) {
-        return languages[elem]; // should generate respective file extension
+    ];
+    if (tag && tag.length > 0) {
+      for (let i = 0; i < tag.length; i += 1) {
+        const elem = tag[i].textContent;
+        if (elem !== undefined && languages[elem] !== undefined) {
+          return languages[elem]; // should generate respective file extension
+        }
       }
     }
   }
+  
+  else {
+
+    const tag = document.getElementsByClassName('inline-flex items-center whitespace-nowrap text-xs rounded-full bg-blue-0 dark:bg-dark-blue-0 text-blue-s dark:text-dark-blue-s px-3 py-1 font-medium leading-4');
+    elem = tag[tag.length - 1].textContent;
+    if (elem !== undefined && languages[elem] !== undefined) {
+      return languages[elem]; // should generate respective file extension
+    }
+
+  }
+
   return null;
 }
 
