@@ -874,11 +874,24 @@ function insertToAnchorElement(elem) {
         target.childNodes[0].prepend(elem);
     }
   } else {
-    if (checkElem(document.getElementsByClassName('action__38Xc'))) {
-      target = document.getElementsByClassName('action__38Xc')[0];
-      elem.className = 'runcode-wrapper__8rXm';
-      if (target.childNodes.length > 0)
-        target.childNodes[0].prepend(elem);
+
+    if(OLD_UI) {
+      // Previous code kept unchanged
+      if (checkElem(document.getElementsByClassName('action__38Xc'))) {
+        target = document.getElementsByClassName('action__38Xc')[0];
+        elem.className = 'runcode-wrapper__8rXm';
+        if (target.childNodes.length > 0)
+          target.childNodes[0].prepend(elem);
+      }
+    }
+    // For new UI
+    else {
+      if (checkElem(document.getElementsByClassName('ml-auto flex items-center space-x-4'))) {
+        target = document.getElementsByClassName('ml-auto flex items-center space-x-4')[0];
+        elem.className = 'runcode-wrapper__8rXm';
+        if (target.childNodes.length > 0)
+          target.insertBefore(elem, target.childNodes[0]);
+      }
     }
   }
 }
