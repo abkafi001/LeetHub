@@ -548,17 +548,37 @@ function parseQuestion() {
 
 /* Parser function for time/space stats */
 function parseStats() {
-  const probStats = document.getElementsByClassName('data__HC-i');
-  if (!checkElem(probStats)) {
-    return null;
-  }
-  const time = probStats[0].textContent;
-  const timePercentile = probStats[1].textContent;
-  const space = probStats[2].textContent;
-  const spacePercentile = probStats[3].textContent;
+  // For old UI
+  if(OLD_UI) {
 
-  // Format commit message
-  return `Time: ${time} (${timePercentile}), Space: ${space} (${spacePercentile}) - LeetHub`;
+    const probStats = document.getElementsByClassName('data__HC-i');
+    if (!checkElem(probStats)) {
+      return null;
+    }
+    const time = probStats[0].textContent;
+    const timePercentile = probStats[1].textContent;
+    const space = probStats[2].textContent;
+    const spacePercentile = probStats[3].textContent;
+
+    // Format commit message
+    return `Time: ${time} (${timePercentile}), Space: ${space} (${spacePercentile}) - LeetHub`;
+  }
+  // For new UI
+  else {
+    
+    const stats = document.getElementsByClassName('text-label-1 dark:text-dark-label-1 ml-2 font-medium');
+    const percentile = document.getElementsByClassName('text-white dark:text-dark-white ml-2 rounded-xl px-1.5 font-medium')
+    if (!checkElem(stats) && !checkElem(percentile)) {
+      return null;
+    }
+    const time = stats[0].textContent;
+    const timePercentile = percentile[0].textContent;
+    const space = stats[1].textContent;
+    const spacePercentile = percentile[1].textContent;
+
+    // Format commit message
+    return `Time: ${time} (${timePercentile}), Space: ${space} (${spacePercentile})`;
+  }
 }
 
 document.addEventListener('click', (event) => {
