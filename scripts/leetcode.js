@@ -397,7 +397,7 @@ function findCode(
       code += spans[i].innerText;
     }
 
-    if (code != null) {
+    if (code) {
       setTimeout(function () {
         uploadGit(
           btoa(unescape(encodeURIComponent(code))),
@@ -408,7 +408,7 @@ function findCode(
           true,
           cb,
         );
-      }, 2000);
+      }, 500);
     }
   }
 }
@@ -599,56 +599,91 @@ document.addEventListener('click', (event) => {
   // Checks if the clicked element is the `Submit` button of the new UI
   if(element === [...document.getElementsByTagName('button')].filter((element) => element.innerText === 'Submit')[0]) {
 
+
     let questionUrl = window.location.href;
-    if (questionUrl.endsWith('/submissions/')) {
-      questionUrl = questionUrl.substring(
-        0,
-        questionUrl.lastIndexOf('/submissions/') + 1,
-      );
+
+    const saveProblemToLcalStorage = () => {
+
+      const questionElem = document.getElementsByClassName('_1l1MA');
+
+      if (checkElem(questionElem)) {
+        
+        // In new UI, if user clicks on description tab, it seems as if nothing changes apart from
+        // leetcode.com/problems/{problem-name}/ changes to leetcode.com/problems/{problem-name}/description/ .
+        // But that's not true. A few style attributes get added to a few child nodes of the problem
+        // statement element, even though visually nothing changes. So, to make the problem statement html element on
+        // https://leetcode.com/problems/{problem-name}/description/ consistent with that of
+        // https://leetcode.com/problems/{problem-name}/, we'll remove all style attributes from it.
+
+        [...questionElem[0].getElementsByTagName("*")].forEach(tag => tag.removeAttribute('style'));
+
+        const qbody = questionElem[0].innerHTML;
+
+        // Problem title.
+        let qtitle = document.getElementsByClassName('mr-2 text-lg font-medium text-label-1 dark:text-dark-label-1');
+    
+        if (checkElem(qtitle)) {
+          qtitle = qtitle[0].innerHTML;
+        } else {
+          qtitle = 'unknown-problem';
+        }
+    
+        // Problem difficulty, each problem difficulty has its own class.
+        // Get the classname correctly.
+        // I checked the uniqueness of all three combinations of classnames.
+        const isHard = document.getElementsByClassName('bg-pink dark:bg-dark-pink text-pink dark:text-dark-pink inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
+        const isMedium = document.getElementsByClassName('bg-yellow dark:bg-dark-yellow text-yellow dark:text-dark-yellow inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
+        const isEasy = document.getElementsByClassName('bg-olive dark:bg-dark-olive text-olive dark:text-dark-olive inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
+    
+        if (checkElem(isEasy)) {
+          difficulty = 'Easy';
+        } else if (checkElem(isMedium)) {
+          difficulty = 'Medium';
+        } else if (checkElem(isHard)) {
+          difficulty = 'Hard';
+        }
+
+        // Final formatting of the contents of the README for each problem
+        const markdown = `<h2><a href="${questionUrl}">${qtitle}</a></h2><h3>${difficulty}</h3><hr>${qbody}`;
+        // Save the problem title slug to localStorage
+        chrome.storage.local.set({"title-slug": addLeadingZeros(convertToSlug(qtitle))}, function() {
+          console.log(`Successfully stored the title-slug: ${addLeadingZeros(convertToSlug(qtitle))} in local storage`);
+        });
+        
+        // Save the markdown to localStorage
+        chrome.storage.local.set({"question-markdown": markdown}, function(){
+          console.log("Successfully stored the README in local storage");
+        });
+      }
+
+    };
+    
+    const descriptionRegex = /^https:\/\/leetcode\.com\/problems\/[a-z0-9\-]+\/(description\/)?$/;
+    const problemRegex = /^https:\/\/leetcode\.com\/problems\/[a-z0-9\-]+\//;
+
+    // Check if already in Description. If so, go ahead or navigate to Description tab otherwise.
+    if (descriptionRegex.test(questionUrl)) {
+      questionUrl = questionUrl.match(problemRegex)[0];
+      console.log("🚀 ~ file: leetcode.js ~ line 681 ~ document.addEventListener ~ questionUrl", questionUrl)
+      saveProblemToLcalStorage();
+    }
+    else {
+      // Navigate to Description tab to collect the problem title and element
+      const className = "flex flex-1 select-none justify-center whitespace-nowrap rounded-t-[5px] px-4 py-[10px] text-xs cursor-pointer text-label-2 dark:text-dark-label-2 px-5";
+      // Returns 3 elements. The first one is Description.
+      document.getElementsByClassName(className)[0].click();
+
+      questionUrl = questionUrl.match(problemRegex)[0];
+      console.log("🚀 ~ file: leetcode.js ~ line 677 ~ document.addEventListener ~ questionUrl", questionUrl)
+      setTimeout(saveProblemToLcalStorage, 500);
     }
 
-    const questionElem = document.getElementsByClassName('_1l1MA');
-
-    if (checkElem(questionElem)) {
-
-      const qbody = questionElem[0].innerHTML;
-      // Problem title.
-      let qtitle = document.getElementsByClassName('mr-2 text-lg font-medium text-label-1 dark:text-dark-label-1');
-  
-      if (checkElem(qtitle)) {
-        qtitle = qtitle[0].innerHTML;
-      } else {
-        qtitle = 'unknown-problem';
-      }
-  
-      // Problem difficulty, each problem difficulty has its own class.
-      // Get the classname correctly.
-      // I checked the uniqueness of all three combinations of classnames.
-      const isHard = document.getElementsByClassName('bg-pink dark:bg-dark-pink text-pink dark:text-dark-pink inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
-      const isMedium = document.getElementsByClassName('bg-yellow dark:bg-dark-yellow text-yellow dark:text-dark-yellow inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
-      const isEasy = document.getElementsByClassName('bg-olive dark:bg-dark-olive text-olive dark:text-dark-olive inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize dark:bg-opacity-[.15]');
-  
-      if (checkElem(isEasy)) {
-        difficulty = 'Easy';
-      } else if (checkElem(isMedium)) {
-        difficulty = 'Medium';
-      } else if (checkElem(isHard)) {
-        difficulty = 'Hard';
-      }
-
-      // Final formatting of the contents of the README for each problem
-      const markdown = `<h2><a href="${questionUrl}">${qtitle}</a></h2><h3>${difficulty}</h3><hr>${qbody}`;
-      console.log("🚀 ~ file: leetcode.js ~ line 662 ~ document.addEventListener ~ qtitle", qtitle)
-      // Save the problem title slug to localStorage
-      chrome.storage.local.set({"title-slug": addLeadingZeros(convertToSlug(qtitle))}, function() {
-        console.log(`Successfully stored the title-slug: ${addLeadingZeros(convertToSlug(qtitle))} in local storage`);
-      });
-      
-      // Save the markdown to localStorage
-      chrome.storage.local.set({"question-markdown": markdown}, function(){
-        console.log("Successfully stored the README in local storage");
-      });
-    }
+    // Remove "marked_as_success" class (if exists) from the successTag
+    // element's class-list, otherwise it will treat it as done already.
+    [...document.getElementsByClassName('marked_as_success')].forEach( (elem) => {
+      elem.classList.remove('marked_as_success');
+    });
+    
   }
   /* Act on Post button click */
   /* Complex since "New" button shares many of the same properties as "Post button */
@@ -719,20 +754,27 @@ function getNotesIfAny() {
 }
 
 const loader = setInterval(() => {
+
+  // The class `navbar-container__2Y7K` only exists in old UI.
+  OLD_UI = checkElem(document.getElementsByClassName('navbar-container__2Y7K'));
+
   let code = null;
   let probStatement = null;
   let probStats = null;
   let probType;
-  const successTag = document.getElementsByClassName('success__3Ai7');
+
+  const successTagClassName = OLD_UI ? 'success__3Ai7' : 'text-green-s dark:text-dark-green-s flex items-center gap-2 text-[16px] font-medium leading-6';
+  const successTag = document.getElementsByClassName(successTagClassName);
+
   const resultState = document.getElementById('result-state');
   var success = false;
   // check success tag for a normal problem
   if (
     checkElem(successTag) &&
-    successTag[0].className === 'success__3Ai7' &&
-    successTag[0].innerText.trim() === 'Success'
+    successTag[0].className === successTagClassName &&
+    // "Success" for old UI and "Accepted" for new.
+    ['Success', 'Accepted'].includes(successTag[0].innerText.trim())
   ) {
-    console.log(successTag[0]);
     success = true;
     probType = NORMAL_PROBLEM;
   }
@@ -750,89 +792,211 @@ const loader = setInterval(() => {
   if (success) {
     probStatement = parseQuestion();
     probStats = parseStats();
-  }
+   }
 
-  if (probStatement !== null) {
-    switch (probType) {
-      case NORMAL_PROBLEM:
-        successTag[0].classList.add('marked_as_success');
-        break;
-      case EXPLORE_SECTION_PROBLEM:
-        resultState.classList.add('marked_as_success');
-        break;
-      default:
-        console.error(`Unknown problem type ${probType}`);
-        return;
-    }
+  if(OLD_UI || window.location.pathname.startsWith('/explore')) {
+    
+    if (probStatement !== null) {
+      switch (probType) {
+        case NORMAL_PROBLEM:
+          successTag[0].classList.add('marked_as_success');
+          break;
+        case EXPLORE_SECTION_PROBLEM:
+          resultState.classList.add('marked_as_success');
+          break;
+        default:
+          console.error(`Unknown problem type ${probType}`);
+          return;
+      }
 
-    const problemName = getProblemNameSlug();
-    const language = findLanguage();
-    if (language !== null) {
-      // start upload indicator here
-      startUpload();
-      chrome.storage.local.get('stats', (s) => {
-        const { stats } = s;
-        const filePath = problemName + problemName + language;
-        let sha = null;
-        if (
-          stats !== undefined &&
-          stats.sha !== undefined &&
-          stats.sha[filePath] !== undefined
-        ) {
-          sha = stats.sha[filePath];
-        }
+      const problemName = getProblemNameSlug();
+      const language = findLanguage();
+      
+      if (language !== null) {
+        // start upload indicator here
+        startUpload();
+        chrome.storage.local.get('stats', (s) => {
 
-        /* Only create README if not already created */
-        if (sha === null) {
-          /* @TODO: Change this setTimeout to Promise */
-          uploadGit(
-            btoa(unescape(encodeURIComponent(probStatement))),
-            problemName,
-            'README.md',
-            readmeMsg,
-            'upload',
-          );
-        }
-      });
+          const { stats } = s;
+          const filePath = problemName + problemName + language;
+          let sha = null;
+          if (
+            stats !== undefined &&
+            stats.sha !== undefined &&
+            stats.sha[filePath] !== undefined
+          ) {
+            sha = stats.sha[filePath];
+          }
 
-      /* get the notes and upload it */
-      /* only upload notes if there is any */
-      notes = getNotesIfAny();
-      if (notes.length > 0) {
-        setTimeout(function () {
-          if (notes != undefined && notes.length != 0) {
-            console.log('Create Notes');
-            // means we can upload the notes too
+          /* Only create README if not already created */
+          if (sha === null) {
+            /* @TODO: Change this setTimeout to Promise */
             uploadGit(
-              btoa(unescape(encodeURIComponent(notes))),
+              btoa(unescape(encodeURIComponent(probStatement))),
               problemName,
-              'NOTES.md',
-              createNotesMsg,
+              'README.md',
+              readmeMsg,
               'upload',
             );
           }
-        }, 500);
-      }
+        });
 
-      /* Upload code to Git */
-      setTimeout(function () {
-        findCode(
-          uploadGit,
-          problemName,
-          problemName + language,
-          probStats,
-          'upload',
-          // callback is called when the code upload to git is a success
-          () => {
-            if (uploadState['countdown'])
-              clearTimeout(uploadState['countdown']);
-            delete uploadState['countdown'];
-            uploadState.uploading = false;
-            markUploaded();
-          },
-        ); // Encode `code` to base64
-      }, 1000);
+        /* get the notes and upload it */
+        /* only upload notes if there is any */
+        notes = getNotesIfAny();
+        if (notes.length > 0) {
+          setTimeout(function () {
+            if (notes != undefined && notes.length != 0) {
+              console.log('Create Notes');
+              // means we can upload the notes too
+              uploadGit(
+                btoa(unescape(encodeURIComponent(notes))),
+                problemName,
+                'NOTES.md',
+                createNotesMsg,
+                'upload',
+              );
+            }
+          }, 500);
+        }
+
+        /* Upload code to Git */
+        setTimeout(function () {
+          findCode(
+            uploadGit,
+            problemName,
+            problemName + language,
+            probStats,
+            'upload',
+            // callback is called when the code upload to git is a success
+            () => {
+              if (uploadState['countdown'])
+                clearTimeout(uploadState['countdown']);
+              delete uploadState['countdown'];
+              uploadState.uploading = false;
+              markUploaded();
+            },
+          ); // Encode `code` to base64
+        }, 1000);
+      }
     }
+  }
+
+  // For new UI:
+
+  // Checking if success === true is important. Because, at this point
+  // probStatement === null, since parseQuestion() won't work for new UI.
+  // We will pull the problem statement from chome's local storage inside.
+  else if(success && probStats) {
+    /*
+    ** Retrieve the problem title and statement from local storage
+    ** and remove it from the local storage.
+    */
+    chrome.storage.local.get('question-markdown', function(obj) {
+      
+      probStatement = obj["question-markdown"];
+      
+      if (probStatement) {
+        
+        chrome.storage.local.remove("question-markdown", function () {
+
+          switch (probType) {
+            case NORMAL_PROBLEM:
+              successTag[0].classList.add('marked_as_success');
+              break;
+            case EXPLORE_SECTION_PROBLEM:
+              resultState.classList.add('marked_as_success');
+              break;
+            default:
+              console.error(`Unknown problem type ${probType}`);
+              return;
+          }
+          
+          chrome.storage.local.get('title-slug', function(obj) {
+
+            const problemName = obj['title-slug'];
+
+            chrome.storage.local.remove("title-slug", function () {
+
+              const language = findLanguage();
+
+              if (language) {
+                // start upload indicator here
+                startUpload();
+                chrome.storage.local.get('stats', (s) => {
+                  const { stats } = s;
+                  const filePath = problemName + problemName + language;
+                  let sha = null;
+                  if (
+                    stats !== undefined &&
+                    stats.sha !== undefined &&
+                    stats.sha[filePath] !== undefined
+                    ) {
+                      sha = stats.sha[filePath];
+                  }
+                  
+                  /* Only create README if not already created */
+                  if (sha === null) {
+                    /* @TODO: Change this setTimeout to Promise */
+                    uploadGit(
+                      btoa(unescape(encodeURIComponent(probStatement))),
+                      problemName,
+                      'README.md',
+                      readmeMsg,
+                      'upload',
+                      );
+                    }
+                });
+                  
+                /* get the notes and upload it */
+                /* only upload notes if there is any */
+                notes = getNotesIfAny();
+                if (notes.length > 0) {
+                  setTimeout(function () {
+                    if (notes != undefined && notes.length != 0) {
+                      console.log('Create Notes');
+                      // means we can upload the notes too
+                      uploadGit(
+                        btoa(unescape(encodeURIComponent(notes))),
+                        problemName,
+                        'NOTES.md',
+                        createNotesMsg,
+                        'upload',
+                      );
+                    }
+                  }, 500);
+                }
+      
+                /* Upload code to Git */
+                setTimeout(function () {
+                  // Sometimes DOMs containing statistics regarding solution render late.
+                  // So, check again.
+                  if(!probStats) {
+                    probStats = parseStats();
+                  };
+
+                  findCode(
+                    uploadGit,
+                    problemName,
+                    problemName + language,
+                    probStats,
+                    'upload',
+                    // callback is called when the code upload to git is a success
+                    () => {
+                      if (uploadState['countdown'])
+                        clearTimeout(uploadState['countdown']);
+                      delete uploadState['countdown'];
+                      uploadState.uploading = false;
+                      markUploaded();
+                    },
+                  ); // Encode `code` to base64
+                }, 2000);
+              }
+            });
+          });
+        });
+      }
+    });
   }
 }, 1000);
 
@@ -926,6 +1090,7 @@ function markUploaded() {
     elem.style = style;
   }
 }
+
 
 /* This will create a failed tick mark before "Run Code" button signalling that upload failed */
 function markUploadFailed() {
