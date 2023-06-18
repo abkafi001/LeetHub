@@ -284,121 +284,16 @@ function findCode(
   cb = undefined,
 ) {
 
-  if(OLD_UI || window.location.pathname.startsWith('/explore')) {
-    /* Get the submission details url from the submission page. */
-    var submissionURL;
-    const e = document.getElementsByClassName('status-column__3SUg');
-    if (checkElem(e)) {
-      // for normal problem submisson
-      const submissionRef = e[1].innerHTML.split(' ')[1];
-      submissionURL =
-        'https://leetcode.com' +
-        submissionRef.split('=')[1].slice(1, -1);
-    } else {
-      // for a submission in explore section
-      const submissionRef = document.getElementById('result-state');
-      submissionURL = submissionRef.href;
-    }
+  // Handle explore section case
+  if (window.location.pathname.startsWith('/explore')) {
 
-    if (submissionURL != undefined) {
-      /* Request for the submission details page */
-      const xhttp = new XMLHttpRequest();
-      xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-          /* received submission details as html reponse. */
-          var doc = new DOMParser().parseFromString(
-            this.responseText,
-            'text/html',
-          );
-          /* the response has a js object called pageData. */
-          /* Pagedata has the details data with code about that submission */
-          var scripts = doc.getElementsByTagName('script');
-          for (var i = 0; i < scripts.length; i++) {
-            var text = scripts[i].innerText;
-            if (text.includes('pageData')) {
-              /* Considering the pageData as text and extract the substring
-              which has the full code */
-              var firstIndex = text.indexOf('submissionCode');
-              var lastIndex = text.indexOf('editCodeUrl');
-              var slicedText = text.slice(firstIndex, lastIndex);
-              /* slicedText has code as like as. (submissionCode: 'Details code'). */
-              /* So finding the index of first and last single inverted coma. */
-              var firstInverted = slicedText.indexOf("'");
-              var lastInverted = slicedText.lastIndexOf("'");
-              /* Extract only the code */
-              var codeUnicoded = slicedText.slice(
-                firstInverted + 1,
-                lastInverted,
-              );
-              /* The code has some unicode. Replacing all unicode with actual characters */
-              var code = codeUnicoded.replace(
-                /\\u[\dA-F]{4}/gi,
-                function (match) {
-                  return String.fromCharCode(
-                    parseInt(match.replace(/\\u/g, ''), 16),
-                  );
-                },
-              );
+    setTimeout(function () {
 
-              /*
-              for a submisssion in explore section we do not get probStat beforehand
-              so, parse statistics from submisson page
-              */
-              if (!msg) {
-                slicedText = text.slice(
-                  text.indexOf('runtime'),
-                  text.indexOf('memory'),
-                );
-                const resultRuntime = slicedText.slice(
-                  slicedText.indexOf("'") + 1,
-                  slicedText.lastIndexOf("'"),
-                );
-                slicedText = text.slice(
-                  text.indexOf('memory'),
-                  text.indexOf('total_correct'),
-                );
-                const resultMemory = slicedText.slice(
-                  slicedText.indexOf("'") + 1,
-                  slicedText.lastIndexOf("'"),
-                );
-                msg = `Time: ${resultRuntime}, Memory: ${resultMemory} - LeetHub`;
-              }
+      const codeDiv = document.getElementsByClassName("CodeMirror-code")[0];
+      const code = parseCode(codeDiv);
+      console.log("🚀 ~ file: leetcode.js ~ line 291 ~ code", code)
 
-              if (code != null) {
-                setTimeout(function () {
-                  uploadGit(
-                    btoa(unescape(encodeURIComponent(code))),
-                    problemName,
-                    fileName,
-                    msg,
-                    action,
-                    true,
-                    cb,
-                  );
-                }, 2000);
-              }
-            }
-          }
-        }
-      };
-
-      xhttp.open('GET', submissionURL, true);
-      xhttp.send();
-    }
-  }
-  // New UI case:
-  else {
-
-    var code = '';
-    const codeTag = document.getElementsByTagName("code");
-    const spans = codeTag[0].childNodes;
-
-    for(let i=0; i<spans.length; i++) {
-      code += spans[i].innerText;
-    }
-
-    if (code) {
-      setTimeout(function () {
+      if (code) {
         uploadGit(
           btoa(unescape(encodeURIComponent(code))),
           problemName,
@@ -408,8 +303,145 @@ function findCode(
           true,
           cb,
         );
-      }, 500);
+      }
+    }, 2000);
+  }
+  // For leetcode.com/problems/{problem-name} section
+  else {
+    // Old UI case (previous code and kept unchanged)
+    if (OLD_UI) {
+      /* Get the submission details url from the submission page. */
+      var submissionURL;
+      const e = document.getElementsByClassName('status-column__3SUg');
+      if (checkElem(e)) {
+        // for normal problem submisson
+        const submissionRef = e[1].innerHTML.split(' ')[1];
+        submissionURL =
+          'https://leetcode.com' +
+          submissionRef.split('=')[1].slice(1, -1);
+      } else {
+        // for a submission in explore section
+        const submissionRef = document.getElementById('result-state');
+        submissionURL = submissionRef.href;
+        console.log("🚀 ~ file: leetcode.js ~ line 301 ~ submissionURL", submissionURL)
+      }
+
+      if (submissionURL) {
+        /* Request for the submission details page */
+        const xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            /* received submission details as html reponse. */
+            var doc = new DOMParser().parseFromString(
+              this.responseText,
+              'text/html',
+            );
+            console.log("🚀 ~ file: leetcode.js ~ line 314 ~ doc", doc)
+            /* the response has a js object called pageData. */
+            /* Pagedata has the details data with code about that submission */
+            var scripts = doc.getElementsByTagName('script');
+            for (var i = 0; i < scripts.length; i++) {
+              var text = scripts[i].innerText;
+              if (text.includes('pageData')) {
+                /* Considering the pageData as text and extract the substring
+                which has the full code */
+                var firstIndex = text.indexOf('submissionCode');
+                var lastIndex = text.indexOf('editCodeUrl');
+                var slicedText = text.slice(firstIndex, lastIndex);
+                /* slicedText has code as like as. (submissionCode: 'Details code'). */
+                /* So finding the index of first and last single inverted coma. */
+                var firstInverted = slicedText.indexOf("'");
+                var lastInverted = slicedText.lastIndexOf("'");
+                /* Extract only the code */
+                var codeUnicoded = slicedText.slice(
+                  firstInverted + 1,
+                  lastInverted,
+                );
+                /* The code has some unicode. Replacing all unicode with actual characters */
+                var code = codeUnicoded.replace(
+                  /\\u[\dA-F]{4}/gi,
+                  function (match) {
+                    return String.fromCharCode(
+                      parseInt(match.replace(/\\u/g, ''), 16),
+                    );
+                  },
+                );
+
+                /*
+                for a submisssion in explore section we do not get probStat beforehand
+                so, parse statistics from submisson page
+                */
+                if (!msg) {
+                  slicedText = text.slice(
+                    text.indexOf('runtime'),
+                    text.indexOf('memory'),
+                  );
+                  const resultRuntime = slicedText.slice(
+                    slicedText.indexOf("'") + 1,
+                    slicedText.lastIndexOf("'"),
+                  );
+                  slicedText = text.slice(
+                    text.indexOf('memory'),
+                    text.indexOf('total_correct'),
+                  );
+                  const resultMemory = slicedText.slice(
+                    slicedText.indexOf("'") + 1,
+                    slicedText.lastIndexOf("'"),
+                  );
+                  msg = `Time: ${resultRuntime}, Memory: ${resultMemory} - LeetHub`;
+                }
+
+                console.log("🚀 ~ file: leetcode.js ~ line 370 ~ code", code)
+
+                if (code != null) {
+                  
+                  setTimeout(function () {
+                    uploadGit(
+                      btoa(unescape(encodeURIComponent(code))),
+                      problemName,
+                      fileName,
+                      msg,
+                      action,
+                      true,
+                      cb,
+                    );
+                  }, 2000);
+                }
+              }
+            }
+          }
+        };
+
+        xhttp.open('GET', submissionURL, true);
+        xhttp.send();
+      }
     }
+    // New UI case:
+    else {
+      const codeTag = document.getElementsByTagName("code")[0];
+      const code = parseCode(codeTag);
+      console.log("🚀 ~ file: leetcode.js ~ line 427 ~ code", code)
+      // const nodes = codeTag[0].childNodes;
+
+      // for(let i=0; i<nodes.length; i++) {
+      //   code += nodes[i].innerText;
+      // }
+
+      if (code) {
+        setTimeout(function () {
+          uploadGit(
+            btoa(unescape(encodeURIComponent(code))),
+            problemName,
+            fileName,
+            msg,
+            action,
+            true,
+            cb,
+          );
+        }, 500);
+      }
+    }
+
   }
 }
 
@@ -757,6 +789,7 @@ const loader = setInterval(() => {
 
   // The class `navbar-container__2Y7K` only exists in old UI.
   OLD_UI = checkElem(document.getElementsByClassName('navbar-container__2Y7K'));
+  console.log({OLD_UI});
 
   let code = null;
   let probStatement = null;
@@ -792,7 +825,7 @@ const loader = setInterval(() => {
   if (success) {
     probStatement = parseQuestion();
     probStats = parseStats();
-   }
+  }
 
   if(OLD_UI || window.location.pathname.startsWith('/explore')) {
     
@@ -810,7 +843,9 @@ const loader = setInterval(() => {
       }
 
       const problemName = getProblemNameSlug();
+      console.log("🚀 ~ file: leetcode.js ~ line 814 ~ loader ~ problemName", problemName)
       const language = findLanguage();
+      console.log("🚀 ~ file: leetcode.js ~ line 816 ~ loader ~ language", language)
       
       if (language !== null) {
         // start upload indicator here
@@ -1076,7 +1111,7 @@ function startUpload() {
   } catch (error) {
     // generic exception handler for time being so that existing feature doesnt break but
     // error gets logged
-    console.log(error);
+    console.error(error);
   }
 }
 
